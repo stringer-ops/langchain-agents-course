@@ -19,8 +19,8 @@ SYSTEM_PROMPT = """
     - Points of improvment: which areas might be advisable to work in, in order to have better chances to get
     that job position.
     - Conclusion:
-            - Punctuation: a number with between 0 and 100 (both inclusive) that indicates the
+            - Mark: a number with between 0 and 100 (both inclusive) that indicates the
             likeliness of getting the job offer. Where 0 meaning having 0 options of getting the job and 100 being 
             a perfect match for the job offer
-            - Summary: a quick summary that supports the reasoning you have followed for setting the punctuation
+            - Summary: a quick summary that supports the reasoning you have followed for setting the mark
 """

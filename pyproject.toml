@@ -8,7 +8,7 @@ dependencies = [
     "langchain==1.*",
     "langchain-classic>=1.0.7",
     "langchain-google-genai>=4.2.2",
-    "markitdown>=0.1.6",
+    "markitdown[pdf]>=0.1.6",
     "pydantic>=2.13.4",
     "python-dotenv>=1.2.2",
     "streamlit>=1.57.0",

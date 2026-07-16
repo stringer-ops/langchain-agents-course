@@ -9,8 +9,10 @@ def evaluate_candidate_chances(cv_pdf: str, job_offer: str) -> dict:
     chain = initialize_evaluator_llm()
 
     result = chain.invoke(
-        cv_text = cv_pdf,
-        job_description = job_offer
+        {
+            "cv_text": extract_pdf_text(cv_pdf),
+            "job_description": job_offer
+        }
     )
 
     result = result.model_dump()
