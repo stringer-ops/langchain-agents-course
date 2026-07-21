@@ -8,119 +8,35 @@ from langchain_core.runnables import RunnableSequence
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_docling import DoclingLoader
 
-from final_assessments.topic_3.prompts.system_prompt import SYSTEM_PROMPT
+from final_assessments.topic_3.prompts.prompts import SYSTEM_PROMPT
+from config.config import (
+    VECTOR_DB_DIR, EMBEDDING_MODEL, QUERY_MODEL, GENERATION_MODEL, SEARCH_TYPE, MMR_DIVERSITY_LAMBDA,
+    SEARCH_K, MMR_FETCH_K
+)
 
-CONTRACTS_DIR = Path(__file__).parent.parent / "data" / "contracts"
-VECTOR_DB_DIR = Path(__file__).parent.parent / "data" / "vector_db"
+def create_rag_chain() -> None:
 
-def create_llm_chain() -> RunnableSequence:
-    """Creates a LangChain chain with LLM that answers questions about documents"""
-    llm = ChatGoogleGenerativeAI(
-        model="gemini-2.5-flash",
-        temperature=0
-    )
-
-    prompt_template = ChatPromptTemplate.from_messages(
-        [
-            ("system", SYSTEM_PROMPT),
-            ("placeholder", "Conversation with the client: {conversation_history}"),
-        ]
-    )
-
-    llm_chain = prompt_template | llm
-
-    return llm_chain
-
-def create_vector_db():
-    """Creates a vector database from the documents in the contracts directory"""
-    files_paths = [
-        str(path) for path in Path(CONTRACTS_DIR).glob("*.pdf")
-    ]
-
-    print(f"Loading a total amount of {len(files_paths)} documents")
-
-    #Text splitting with chunk overlap to enhance chunk context and avoid data loss
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=5000,
-        chunk_overlap=1000,
-    )
-
-    docs_splitted = text_splitter.split_documents(
-        [DoclingLoader(path).load() for path in files_paths]
-    )
-
-    print(f"Successfully generated {len(docs_splitted)} chunks of text from the documents")
-
-    # Create embedding model and vector store
-    embedding_model = GoogleGenerativeAIEmbeddings(
-        model="gemini-embedding-001"
-    )
-
-    if not VECTOR_DB_DIR.exists():
-        VECTOR_DB_DIR.mkdir(parents=True)
-
-        vector_store = Chroma.from_documents(
-            docs_splitted,
-            embedding_function=embedding_model,
-            persist_directory=str(VECTOR_DB_DIR)
-        )
-
-        print(f"Created vector database at {VECTOR_DB_DIR}")
-
-    return vector_store
-
-def create_retriever() -> MultiQueryRetriever:
-    """Creates a MultiQueryRetriever that retrieves relevant documents based on user queries"""
-
-    files_paths = [
-        str(path) for path in Path(CONTRACTS_DIR).glob("*.pdf")
-    ]
-
-    print(f"Loading a total amount of {len(files_paths)} documents")
-
-    #Text splitting with chunk overlap to enhance chunk context and avoid data loss
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=5000,
-        chunk_overlap=1000,
-    )
-
-    docs_splitted = text_splitter.split_documents(
-        [DoclingLoader(path).load() for path in files_paths]
-    )
-
-    print(f"Successfully generated {len(docs_splitted)} chunks of text from the documents")
-
-    # Create embedding model and vector store
-    embedding_model = GoogleGenerativeAIEmbeddings(
-        model="gemini-embedding-001"
-    )
-
-    if not VECTOR_DB_DIR.exists():
-        VECTOR_DB_DIR.mkdir(parents=True)
-
-        vector_store = Chroma.from_documents(
-            docs_splitted,
-            embedding_function=embedding_model,
-            persist_directory=str(VECTOR_DB_DIR)
-        )
-
-        print(f"Created vector database at {VECTOR_DB_DIR}")
-
-    #TODO: cover this case
-    else:
-        vector_store = Chroma(
+    if Path(VECTOR_DB_DIR).exists():
+        vector_db = Chroma(
             persist_directory=str(VECTOR_DB_DIR),
-            embedding_function=embedding_model
+            embedding_function=GoogleGenerativeAIEmbeddings(model = EMBEDDING_MODEL)
         )
+    else:
+        raise ValueError(f"Vector database is not created or is not configured properly")
 
-        print(f"Recovered existing vector database at {VECTOR_DB_DIR}")
+    #Model to process the user input fot the vector db query
+    llm_query = ChatGoogleGenerativeAI(model=QUERY_MODEL, temperature=0)
 
-    retriever = MultiQueryRetriever(
-        vectorstore=vector_store,
-        search_kwargs={"k": 2},
-        llm_chain=create_llm_chain()
+    #Model ****
+    llm_generation = ChatGoogleGenerativeAI(model=GENERATION_MODEL, temperature=0)
+
+    #Retriever MMR (Maximal Margin Relevance)
+    #Used when retrieving chunks from query. Balances precision with variability
+    base_retriever = vector_db.as_retriever(
+        search_type=SEARCH_TYPE,
+        search_kwargs={
+            "k": SEARCH_K,
+            "lambda_mult": MMR_DIVERSITY_LAMBDA,
+            "fetch_k": MMR_FETCH_K
+        }
     )
-
-    print("Successfully created MultiQueryRetriever")
-
-    return retriever
