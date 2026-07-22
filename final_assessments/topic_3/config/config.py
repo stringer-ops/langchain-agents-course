@@ -15,8 +15,8 @@ SIMILARITY_THRESHOLD = 0.75 #Similarity threshold for hybrid search
 
 #Models
 #Embedding model used to create the vector database
-EMBEDDING_MODEL = "gemini-embedding-001"
+EMBEDDING_MODEL = "text-embedding-3-large"
 
 #Model used to process user input and generate several queries for retrieval. Simple task
-QUERY_MODEL = "gemini-2.0-flash-lite"
-GENERATION_MODEL = "gemini-2.0-flash"
+QUERY_MODEL = "gpt-4.1-nano"
+GENERATION_MODEL = "gpt-4o-mini"

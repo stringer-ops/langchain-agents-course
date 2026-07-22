@@ -1,19 +1,22 @@
 from pathlib import Path
 
 import streamlit as st
+from dotenv import load_dotenv
 from langchain_core.prompts import PromptTemplate
 from langchain_core.runnables import RunnablePassthrough, RunnableSerializable
 from langchain_core.documents import Document
 from langchain_classic.retrievers import MultiQueryRetriever, EnsembleRetriever
 from langchain_classic.schema import StrOutputParser
-from langchain_google_genai import GoogleGenerativeAIEmbeddings, ChatGoogleGenerativeAI
+from langchain_openai import OpenAIEmbeddings, ChatOpenAI
 from langchain_chroma import Chroma
 
-from final_assessments.topic_3.prompts.prompts import MULTI_QUERY_PROMPT, RAG_TEMPLATE
+from prompts.prompts import MULTI_QUERY_PROMPT, RAG_TEMPLATE
 from config.config import (
     ENABLE_HYBRID_SEARCH, SIMILARITY_THRESHOLD, VECTOR_DB_DIR, EMBEDDING_MODEL, QUERY_MODEL, GENERATION_MODEL, SEARCH_TYPE, MMR_DIVERSITY_LAMBDA,
     SEARCH_K, MMR_FETCH_K
 )
+
+load_dotenv()
 
 #Stored the function as cache to speed up creating the web interface, since this is immutable
 @st.cache_resource
@@ -23,16 +26,16 @@ def create_rag_chain() -> tuple[RunnableSerializable, MultiQueryRetriever]:
     if Path(VECTOR_DB_DIR).exists():
         vector_db = Chroma(
             persist_directory=str(VECTOR_DB_DIR),
-            embedding_function=GoogleGenerativeAIEmbeddings(model = EMBEDDING_MODEL)
+            embedding_function=OpenAIEmbeddings(model = EMBEDDING_MODEL)
         )
     else:
         raise ValueError("Vector database is not created or is not configured properly")
 
     #Model to process the user input fot the vector db query
-    llm_query = ChatGoogleGenerativeAI(model=QUERY_MODEL, temperature=0)
+    llm_query = ChatOpenAI(model=QUERY_MODEL, temperature=0)
 
     #Model ****
-    llm_generation = ChatGoogleGenerativeAI(model=GENERATION_MODEL, temperature=0)
+    llm_generation = ChatOpenAI(model=GENERATION_MODEL, temperature=0)
 
     #Retrievers
     #Retriever MMR (Maximal Margin Relevance)
@@ -57,7 +60,7 @@ def create_rag_chain() -> tuple[RunnableSerializable, MultiQueryRetriever]:
     #Retriever instanced. MultiQuery generates several queries with simple LLM model
     multi_query_prompt = PromptTemplate.from_template(MULTI_QUERY_PROMPT)
     mmr_multi_retriever = MultiQueryRetriever.from_llm(
-        base_retriever=base_retriever,
+        retriever=base_retriever,
         llm=llm_query,
         prompt=multi_query_prompt
     )
@@ -78,7 +81,6 @@ def create_rag_chain() -> tuple[RunnableSerializable, MultiQueryRetriever]:
     #Function to format and preprocess retrieved documents
     def format_docs(docs: list[Document]) -> str:
         """Formats the retrieved documents by adding context information to help LLM reasoning process"""
-
         formatted_docs = []
         for i, doc in enumerate(docs, 1):
             header = f"[Fragment {i}]"

@@ -1,6 +1,4 @@
-
-
-from final_assessments.topic_3.config.config import (
+from config.config import (
     ENABLE_HYBRID_SEARCH, SEARCH_TYPE, EMBEDDING_MODEL, GENERATION_MODEL, MMR_DIVERSITY_LAMBDA, QUERY_MODEL, SEARCH_K, 
     MMR_FETCH_K, SIMILARITY_THRESHOLD
 )

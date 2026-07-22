@@ -4,7 +4,7 @@ from typing import TypedDict
 from langchain_classic.prompts import PromptTemplate
 from langchain_classic.schema import StrOutputParser
 from langgraph.graph import StateGraph, START, END
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_openai import ChatOpenAI
 from numpy import record
 
 from topic_4.meetings_processor.prompts import (
@@ -12,7 +12,7 @@ from topic_4.meetings_processor.prompts import (
     RECORD_GENERATOR, SUMMARY_GENERATOR
 )
 
-LLM_MODEL = "gemini-2.0-flash-lite"
+LLM_MODEL = "gpt-4o-mini"
 
 chain_participants = None
 chain_topics = None
@@ -23,20 +23,20 @@ chain_summary = None
 def init_llm_processors():
     global chain_participants, chain_topics, chain_actions_items, chain_record, chain_summary
 
-    llm_participants = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0.0)
+    llm_participants = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
     prompt_participants = PromptTemplate.from_template(PARTICIPANTS_EXTRACTOR)
     chain_participants = prompt_participants | llm_participants | StrOutputParser()
     
-    llm_topics = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0.0)
+    llm_topics = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
     chain_topics = PromptTemplate.from_template(TOPICS_EXTRACTOR) | llm_topics | StrOutputParser()
 
-    llm_actions_items = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0.0)
+    llm_actions_items = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
     chain_actions_items = PromptTemplate.from_template(ACTIONS_ITEMS_EXTRACTOR) | llm_actions_items | StrOutputParser()
 
-    llm_record = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0.0)
+    llm_record = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
     chain_record = PromptTemplate.from_template(RECORD_GENERATOR) | llm_record | StrOutputParser()
 
-    llm_summary = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0.0)
+    llm_summary = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
     chain_summary = PromptTemplate.from_template(SUMMARY_GENERATOR) | llm_summary | StrOutputParser()
 
 def load_transcript() -> str:

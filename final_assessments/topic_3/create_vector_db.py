@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain_openai import OpenAIEmbeddings
 from langchain_chroma import Chroma
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -32,7 +32,7 @@ def main() -> None:
     print(f"Successfully generated {len(docs_splitted)} chunks of text from the documents")
 
     # Create embedding model and vector store
-    embedding_model = GoogleGenerativeAIEmbeddings(
+    embedding_model = OpenAIEmbeddings(
         model=EMBEDDING_MODEL
     )
 
