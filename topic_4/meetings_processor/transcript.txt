@@ -1,0 +1,87 @@
+Meeting Transcript – AI Agent Integration for Banking
+
+Participants: Sarah (Engagement Manager), David (AI Solution Architect), Priya (Banking SME), Michael (Project Manager)
+
+Sarah: Thanks, everyone. Before we get into the details, how did the workshops go last week?
+
+Michael: Better than expected. The operations teams were quite engaged. They had a lot of questions, but most of them were around how the AI would fit into their existing processes rather than whether they wanted it.
+
+Priya: I noticed the same. They were especially interested in reducing repetitive work. Loan officers kept mentioning how much time they spend reviewing the same types of documents over and over.
+
+David: Which is probably why that came up as the strongest candidate for the first implementation. Technically it's also a relatively controlled use case.
+
+Sarah: What about customer support? That was one of the original priorities.
+
+Priya: It still is, but I think we should be careful about who uses it first. If employees start using it internally, we'll get useful feedback without exposing customers to any early issues.
+
+David: I actually prefer that approach. We can validate the retrieval pipeline and improve the responses before opening it to external users.
+
+Michael: That would also make planning a bit easier. The first release becomes much smaller.
+
+Sarah: Makes sense. Let's avoid trying to do everything at once.
+
+David: Another thing that came up is that people expect the assistant to explain where its answers come from. They don't want a black box.
+
+Priya: That's coming from compliance as well. They were very clear that recommendations need to be backed by approved documentation.
+
+Sarah: Did they raise any concerns about data leaving the bank?
+
+Priya: Yes. Sensitive customer information is still the biggest concern. They want very clear boundaries around what information the model can access and what gets logged.
+
+David: None of that is a blocker. We can keep retrieval inside the bank's environment and make sure every response includes references to the source documents.
+
+Michael: And what happens when the AI isn't confident?
+
+David: Then it should simply say so and pass the request to a human instead of trying to guess.
+
+Sarah: I'd rather design that from the beginning than add it later.
+
+Priya: Agreed. Trust is going to matter much more than having perfect automation on day one.
+
+Michael: Speaking of day one, are we still comfortable with the pilot timeline?
+
+David: From the technical side, yes. Assuming we receive access to the infrastructure on time.
+
+Priya: My only concern is the documentation itself. Some of the operational procedures haven't been updated for quite a while.
+
+Sarah: How serious is that?
+
+Priya: Not critical, but if the knowledge base isn't cleaned up first, the assistant will inevitably surface outdated information.
+
+David: I'd rather spend an extra week reviewing the content than build on poor data.
+
+Michael: I'll adjust the schedule slightly to leave room for that review.
+
+Sarah: Good idea. Better now than halfway through testing.
+
+Michael: Once that's done, we should have enough to bring in the retail lending team for the pilot.
+
+Priya: They've already said they're interested. Around fifty users should be available.
+
+David: That's enough to collect meaningful feedback. We should also agree on what success looks like before they start using it.
+
+Sarah: Such as?
+
+David: Whether document reviews become faster, how often employees actually use the assistant, and how frequently they still need to escalate requests.
+
+Michael: I'll add those measures to the project dashboard so we can track them from the first week.
+
+Sarah: Perfect. David, could you also update the architecture with the confidence scoring and escalation flow we discussed?
+
+David: Yes, I'll work on that this week.
+
+Sarah: Priya, can you reconnect with compliance once that's ready? I'd like their feedback before we finalize anything.
+
+Priya: Sure. I'll also start reviewing the existing documentation with the operations team so we know what needs updating.
+
+Michael: Once I have everyone's inputs, I'll refresh the project plan and circulate the new version.
+
+Sarah: Great. Let's aim to review everything together next week before we move into implementation.
+
+David: Sounds good.
+
+Priya: Works for me.
+
+Michael: I'll send out the updated plan after this meeting.
+
+Sarah: Thanks, everyone.
