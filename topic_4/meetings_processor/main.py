@@ -1,18 +1,20 @@
-import json
-
 from typing import TypedDict
+
+from dotenv import load_dotenv
 from langchain_classic.prompts import PromptTemplate
 from langchain_classic.schema import StrOutputParser
 from langgraph.graph import StateGraph, START, END
 from langchain_openai import ChatOpenAI
-from numpy import record
 
-from topic_4.meetings_processor.prompts import (
+from prompts import (
     PARTICIPANTS_EXTRACTOR, TOPICS_EXTRACTOR, ACTIONS_ITEMS_EXTRACTOR, 
     RECORD_GENERATOR, SUMMARY_GENERATOR
 )
+from models import Participants, Topics, ActionsItems
 
-LLM_MODEL = "gpt-4o-mini"
+load_dotenv()
+
+LLM_MODEL = "gpt-4o"
 
 chain_participants = None
 chain_topics = None
@@ -24,14 +26,17 @@ def init_llm_processors():
     global chain_participants, chain_topics, chain_actions_items, chain_record, chain_summary
 
     llm_participants = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
+    structured_llm_participants = llm_participants.with_structured_output(Participants)
     prompt_participants = PromptTemplate.from_template(PARTICIPANTS_EXTRACTOR)
-    chain_participants = prompt_participants | llm_participants | StrOutputParser()
+    chain_participants = prompt_participants | structured_llm_participants
     
     llm_topics = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
-    chain_topics = PromptTemplate.from_template(TOPICS_EXTRACTOR) | llm_topics | StrOutputParser()
+    structured_llm_topics = llm_topics.with_structured_output(Topics)
+    chain_topics = PromptTemplate.from_template(TOPICS_EXTRACTOR) | structured_llm_topics
 
     llm_actions_items = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
-    chain_actions_items = PromptTemplate.from_template(ACTIONS_ITEMS_EXTRACTOR) | llm_actions_items | StrOutputParser()
+    structured_llm_actions_items = llm_actions_items.with_structured_output(ActionsItems)
+    chain_actions_items = PromptTemplate.from_template(ACTIONS_ITEMS_EXTRACTOR) | structured_llm_actions_items
 
     llm_record = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
     chain_record = PromptTemplate.from_template(RECORD_GENERATOR) | llm_record | StrOutputParser()
@@ -65,38 +70,23 @@ def main():
     def extract_participants(state: State):
         print("Extracting participants...")
 
-        response = chain_participants.invoke({"transcript": state["notes"]})
+        participants = chain_participants.invoke({"transcript": state["notes"]}).model_dump()
 
-        try:
-            participants = json.loads(response)
-        except json.JSONDecodeError as e:
-            print("Error decoding JSON response for participants:", response, "Error:", e)
-            participants = []
-        return {"participants": participants}
+        return participants
 
     def extract_topics(state: State):
         print("Extracting topics...")
 
-        topics = chain_topics.invoke({"transcript": state["notes"]})
+        topics = chain_topics.invoke({"transcript": state["notes"]}).model_dump()
 
-        try:
-            topics_list = json.loads(topics)
-        except json.JSONDecodeError as e:
-            print("Error decoding JSON response for topics:", topics, "Error:", e)
-            topics_list = []
-        return {"topics": topics_list}
+        return topics
 
     def extract_actions_items(state: State):
         print("Extracting action items...")
 
-        response = chain_actions_items.invoke({"transcript": state["notes"], "participants": state["participants"]})
+        action_items = chain_actions_items.invoke({"transcript": state["notes"], "participants": state["participants"]}).model_dump()
 
-        try:
-            action_items = json.loads(response)
-        except json.JSONDecodeError as e:
-            print("Error decoding JSON response for action items:", response, "Error:", e)
-            action_items = {}
-        return {"actions_items": action_items}
+        return action_items
 
     def generate_record(state: State):
         print("Generating record...")
