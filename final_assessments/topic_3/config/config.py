@@ -8,7 +8,7 @@ VECTOR_DB_DIR = Path(__file__).parent.parent / "data" / "vector_db"
 SEARCH_TYPE = "mmr" #Search type performed in retriever
 MMR_DIVERSITY_LAMBDA = 0.7 #0 -> more diversity, 1 -> more relevant (less diverse)
 MMR_FETCH_K = 20 #Chunks initially analyzed before applying MMR
-SEARCH_K = 2 #Final chunks obtained
+SEARCH_K = 3 #Final chunks obtained
 
 ENABLE_HYBRID_SEARCH = True #Enables hybrid search, combines semantic and keyword search
 SIMILARITY_THRESHOLD = 0.75 #Similarity threshold for hybrid search

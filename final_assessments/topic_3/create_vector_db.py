@@ -29,6 +29,28 @@ def main() -> None:
         DoclingLoader(files_paths).load()
     )
 
+    #Format metadata to the desired format
+    final_docs_splitted = []
+    for doc in docs_splitted:
+        new_metadata = {}
+        dl_meta = doc.metadata.get("dl_meta", {})
+        origin = dl_meta.get("origin", {})
+        new_metadata["source"] = origin.get("filename")
+        new_metadata["mimetype"] = origin.get("mimetype")
+
+        page_number = 'Unknown page'
+        doc_items = dl_meta.get("doc_items", [])
+        if len(doc_items) > 0:
+            prov = doc_items[0].get('prov', [])
+            if len(prov) > 0:
+                page_number = prov[0].get('page_no', 'Unknown page')
+        new_metadata["page"] = page_number
+
+        doc.metadata = new_metadata
+        final_docs_splitted.append(doc)
+
+    docs_splitted = final_docs_splitted
+
     print(f"Successfully generated {len(docs_splitted)} chunks of text from the documents")
 
     # Create embedding model and vector store
@@ -40,8 +62,8 @@ def main() -> None:
         VECTOR_DB_DIR.mkdir(parents=True)
 
         vector_store = Chroma.from_documents(
-            docs_splitted,
-            embedding_function=embedding_model,
+            documents=docs_splitted,
+            embedding=embedding_model,
             persist_directory=str(VECTOR_DB_DIR)
         )
 
