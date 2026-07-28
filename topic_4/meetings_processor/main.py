@@ -1,4 +1,5 @@
-from typing import TypedDict
+from typing import TypedDict, Annotated
+from operator import add
 
 from dotenv import load_dotenv
 from langchain_classic.prompts import PromptTemplate
@@ -59,6 +60,7 @@ def main():
         actions_items: dict[str, str]
         record: str
         summary: str
+        logs: Annotated[list[str], add]
 
     # Graph definition
     graph = StateGraph(State)
@@ -67,28 +69,31 @@ def main():
     init_llm_processors()
 
     # Nodes definition and integrated into the graph
-    def extract_participants(state: State):
+    def extract_participants(state: State) -> State:
         print("Extracting participants...")
 
         participants = chain_participants.invoke({"transcript": state["notes"]}).model_dump()
+        participants["logs"] = ["Participants extracted successfully"]
 
         return participants
 
-    def extract_topics(state: State):
+    def extract_topics(state: State) -> State:
         print("Extracting topics...")
 
         topics = chain_topics.invoke({"transcript": state["notes"]}).model_dump()
+        topics["logs"] = ["Topics extracted successfully"]
 
         return topics
 
-    def extract_actions_items(state: State):
+    def extract_actions_items(state: State) -> State:
         print("Extracting action items...")
 
         action_items = chain_actions_items.invoke({"transcript": state["notes"], "participants": state["participants"]}).model_dump()
+        action_items["logs"] = ["Action items extracted successfully"]
 
         return action_items
 
-    def generate_record(state: State):
+    def generate_record(state: State) -> State:
         print("Generating record...")
 
         response = chain_record.invoke({"transcript": state["notes"]})
@@ -100,7 +105,7 @@ def main():
             record = response
         return {"record": record}
 
-    def generate_summary(state: State):
+    def generate_summary(state: State) -> State:
         print("Generating summary...")
         response = chain_summary.invoke({"transcript": state["notes"]})
 
@@ -140,6 +145,12 @@ def main():
     # Execute the graph with an initial state
     initial_state = {
         "notes": load_transcript(),
+        "participants": [],
+        "topics": [],
+        "action_items": [],
+        "record": "",
+        "summary": "",
+        "logs": []
     }
     result = graph_compiled.invoke(initial_state)
 
