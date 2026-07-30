@@ -21,9 +21,10 @@ class HumanResponse(Response):
         self.human_content = None
 
 class Ticket:
-    def __init__(self, description):
+    def __init__(self, description, user):
         self.ticket_id = self._generate_id()
         self.description = description
+        self.user = user
         self.status = "Open"
         self.created_at = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         self.solution = None
