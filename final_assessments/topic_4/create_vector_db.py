@@ -1,37 +1,41 @@
 from pathlib import Path
 
-from langchain_openai import OpenAIEmbeddings
-from langchain_chroma import Chroma
+from dotenv import load_dotenv
 
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_docling import DoclingLoader
-from dotenv import load_dotenv
+from langchain_docling.loader import DoclingLoader
+from langchain_openai import OpenAIEmbeddings
+from langchain_chroma import Chroma
 
 from config import DOCS_DIR, VECTOR_DB_DIR, EMBEDDING_MODEL
 
 load_dotenv()
 
-def main() -> None:
+def main():
 
+    # 1 - Document loading
     files_paths = [
         str(path) for path in Path(DOCS_DIR).glob("*.md")
     ]
+    
+    loader = DoclingLoader(files_paths)
+    docs = loader.load()
 
-    print(f"Loading a total amount of {len(files_paths)} documents")
+    print(f"{len(docs)} documents successfully loaded")
 
-    #Text splitting with chunk overlap to enhance chunk context and avoid data loss
-    text_splitter = RecursiveCharacterTextSplitter(
-        chunk_size=200,
-        chunk_overlap=40,
+    # 2- Document chunking
+    splitter = RecursiveCharacterTextSplitter(
+        chunk_size = 200,
+        chunk_overlap = 40
     )
 
-    docs_splitted = text_splitter.split_documents(
-        DoclingLoader(files_paths).load()
-    )
+    chunks = splitter.split_documents(docs)
+
+    print(f"{len(chunks)} chunks successfully generated")
 
     #Format metadata to the desired format
     final_docs_splitted = []
-    for doc in docs_splitted:
+    for doc in chunks:
         new_metadata = {}
         dl_meta = doc.metadata.get("dl_meta", {})
         origin = dl_meta.get("origin", {})
@@ -41,33 +45,23 @@ def main() -> None:
         doc.metadata = new_metadata
         final_docs_splitted.append(doc)
 
-    docs_splitted = final_docs_splitted
+    # 3 - Embbeding of documents
+    embeddings = OpenAIEmbeddings(model=EMBEDDING_MODEL)
 
-    print(f"Successfully generated {len(docs_splitted)} chunks of text from the documents")
+    vector_db_dir = Path(VECTOR_DB_DIR)
+    if not vector_db_dir.exists():
 
-    # Create embedding model and vector store
-    embedding_model = OpenAIEmbeddings(
-        model=EMBEDDING_MODEL
-    )
+        vector_db_dir.mkdir(parents=True)
 
-    if not VECTOR_DB_DIR.exists():
-        VECTOR_DB_DIR.mkdir(parents=True)
-
-        vector_store = Chroma.from_documents(
-            documents=docs_splitted,
-            embedding=embedding_model,
-            persist_directory=str(VECTOR_DB_DIR)
+        vector_db = Chroma.from_documents(
+            documents=final_docs_splitted,
+            embedding=embeddings,
+            persist_directory=str(vector_db_dir)
         )
 
-        print(f"Created vector database at {VECTOR_DB_DIR}")
-
+        print(f"{len(chunks)} chunks successfully introduced into vector DB at {VECTOR_DB_DIR}")
     else:
-        vector_store = Chroma(
-            persist_directory=str(VECTOR_DB_DIR),
-            embedding_function=embedding_model
-        )
-
-        print(f"Recovered existing vector database at {VECTOR_DB_DIR}")
+        print(f"vector DB at {VECTOR_DB_DIR} already exists")
 
 if __name__ == "__main__":
     main()

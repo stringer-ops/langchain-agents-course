@@ -17,7 +17,6 @@ class AIResponse(Response):
 class HumanResponse(Response):
     def __init__(self):
         super().__init__()
-        self.ticket_context = None
         self.human_content = None
 
 class Ticket:

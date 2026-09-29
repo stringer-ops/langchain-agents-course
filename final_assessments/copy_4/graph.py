@@ -45,11 +45,13 @@ class HelpDeskGraph:
             solution.response_text = analysis_result["answer"]
             solution.confidence_score = analysis_result["confidence"]
 
-            ticket.solution = solution
         else:
             solution= AIResponse()
             solution.response_text = analysis_result["answer"]
             solution.confidence_score = analysis_result["confidence"]
+            solution.sources = analysis_result["sources"]
             ticket.update_status("Resolved")
+        
+        ticket.solution = solution
 
         return {"ticket": ticket}
