@@ -12,6 +12,7 @@ dependencies = [
     "langchain-docling>=2.0.0",
     "langchain-google-genai>=4.2.2",
     "langchain-openai>=1.4.0",
+    "langchain-text-splitters>=1.1.2",
     "langgraph>=1.2.0",
     "markitdown[pdf]>=0.1.6",
     "numpy>=2.2.6",
