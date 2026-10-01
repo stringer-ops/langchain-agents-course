@@ -20,3 +20,7 @@ RAG_TEMPERATURE = 0.5
 
 #Use case
 CONFIDENCE_THRESHOLD = 0.75 #Confidence threshold for retrieval analysis. If the confidence is below this value, the ticket will be escalated to human intervention
+
+#Context enrich - given the available documentation, it helps the agent
+CONTEXT_MODEL = "gpt-4.1-mini"
+CONTEXT_TEMPERATURE = 0.7

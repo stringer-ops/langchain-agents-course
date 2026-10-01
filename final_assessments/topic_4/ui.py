@@ -1,8 +1,9 @@
 import streamlit as st
 
 from config import *
-from graph import HelpDeskGraph
+from graph import TicketGraph
 from items import Ticket
+from config import *
 
 st.set_page_config(page_title="Helpdesk 2.0 with RAG", page_icon="🎫", layout="wide")
 
@@ -28,7 +29,16 @@ def render_sidebar() -> None:
 		)
 
 		st.subheader("⚙️ General Configuration")
-		st.markdown("Lorem ipsum")
+		st.markdown(f"""
+			## RAG
+			- Model: {RAG_MODEL}
+			- Temperature: {RAG_TEMPERATURE}
+			- Minimum confidence: {CONFIDENCE_THRESHOLD} [0 - 1]
+
+			## Context Summary for Humans
+			- Model: {CONTEXT_MODEL}
+			- Temperature: {CONTEXT_TEMPERATURE}
+		""")
 
 
 def render_main_content() -> None:
@@ -56,10 +66,16 @@ def render_main_content() -> None:
 					st.error("Please enter a ticket description.")
 				else:
 					with st.spinner("Processing ticket..."):
-						ticket = Ticket(description=description)
-						ticket = st.session_state.graph.execute_graph(ticket, user=email)["ticket"]
+						ticket = Ticket(description=description, user=email)
+
+						result = st.session_state.graph.execute_graph(ticket)
+						ticket = result["ticket"]
 
 					st.session_state.tickets.append(ticket)
+
+					if ticket.human_response is not None:
+						st.session_state.human_solved_contexts[ticket.ticket_id] = ticket.human_response.enriched_context
+
 					st.success(f"Ticket {ticket.ticket_id} sent successfully.")
 
 	with right_col:
@@ -72,18 +88,59 @@ def render_main_content() -> None:
 				title = f"{ticket.ticket_id} | {ticket.created_at}"
 				with st.expander(title, expanded=False):
 					st.write(f"Ticket ID: {ticket.ticket_id}")
-					st.write(f"User Email: {ticket.email}")
-					st.write(f"Category: {ticket.category}")
+					st.write(f"User Email: {ticket.user}")
 					st.write(f"Ticket Description: {ticket.description}")
+					st.write(f"Ticket Status: {ticket.status}")
 
 					st.markdown("**Response**")
-					st.info(ticket.solution.response_text if ticket.solution else "No response yet.")
+
+					response = "No response"
+					if ticket.human_response is None and ticket.ai_response is not None and ticket.status == "Resolved":
+
+						response = ticket.ai_response.conclusion
+
+						st.info(response)
+						st.markdown("**Response Metrics**")
+						st.markdown(f"""
+							- Sources: {', '.join(ticket.ai_response.sources)}
+							- Confidence: {ticket.ai_response.score}
+						""")
+					elif ticket.human_response is not None and ticket.status == "Human Intervention":
+						response = ticket.human_response.human_answer
+						context = st.session_state.human_solved_contexts[ticket.ticket_id] 
+
+						with st.expander("Issue Context", expanded=False):
+							st.write(context)
+
+						with st.form("human_solve_form"):
+							description_update = st.text_area(
+								"📝 Issue resolution description",
+								placeholder="Explain how to solve the issue",
+								height=170,
+							)
+				
+							submitted_update= st.form_submit_button("🚀 Update Ticket")
+				
+							if submitted_update:
+								if not description.strip():
+									st.error("Please enter a ticket description.")
+								else:
+									with st.spinner("Updating ticket.."):
+										ticket.human_response.human_answer = description_update
+										ticket.status = "Resolved"
+									st.success(f"Ticket {ticket.ticket_id} updated successfully.")
+
+					elif ticket.human_response is not None and ticket.status == "Resolved":
+						response = ticket.human_response.human_answer
+						
+						st.info(response)
 
 
 def main() -> None:
 	if "tickets" not in st.session_state:
 		st.session_state.tickets = []
-		st.session_state.graph = HelpDeskGraph()
+		st.session_state.graph = TicketGraph()
+		st.session_state.human_solved_contexts = {}
 	render_sidebar()
 	render_main_content()
 
