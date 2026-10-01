@@ -15,7 +15,8 @@ SIMILARITY_THRESHOLD = 0.75 #Similarity threshold for hybrid search
 EMBEDDING_MODEL = "text-embedding-3-large"
 
 #Model used to process user input and generate several queries for retrieval. Simple task
-MODEL = "gpt-4.1-mini"
+RAG_MODEL = "gpt-4.1-mini"
+RAG_TEMPERATURE = 0.5
 
 #Use case
 CONFIDENCE_THRESHOLD = 0.75 #Confidence threshold for retrieval analysis. If the confidence is below this value, the ticket will be escalated to human intervention
