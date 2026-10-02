@@ -16,15 +16,14 @@ This project gathers hands-on examples to learn how to build applications with:
 
 - RAG & Vector Databases — Implement retrieval pipelines using embeddings and vector databases for accurate knowledge retrieval.
 
-- Production-Ready AI Systems — Develop scalable AI workflows with FastAPI, Streamlit, and multi-agent architectures.
+- Production-Ready AI Systems — Develop scalable AI workflows and multi-agent architectures.
 
 ## Repository Structure
 
 ```text
 .
 |- topic_<n>/                 # Exercises for each course topic (topic_1, topic_2, ...)
-|- final_assessments/
-|  \- topic_<n>/             # Final assessment for each topic
+|  \ - final_<...>/          # Final assessment of that topic
 |- pyproject.toml            # Project metadata and dependencies
 \- README.md                # Project documentation
 ```
@@ -32,13 +31,12 @@ This project gathers hands-on examples to learn how to build applications with:
 ### Generic folder conventions
 
 - `topic_<n>/`: incremental topic folders that contain scripts, examples, and experiments.
-- `final_assessments/topic_<n>/`: final project or assessment implementation for each topic.
 - `pyproject.toml`: dependency and Python version management.
 
 ## Requirements
 
 - Python 3.10 or higher
-- A valid API key for Google AI Studio (Gemini)
+- A valid API key for Google AI Studio or OpenAI
 
 ## Installation
 
@@ -62,6 +60,7 @@ Create a `.env` file in the repository root:
 
 ```env
 GOOGLE_API_KEY=your_api_key_here
+OPENAI_API_KEY=your_api_key_here
 ```
 
 ## Running Exercises
@@ -69,10 +68,10 @@ GOOGLE_API_KEY=your_api_key_here
 Examples by topic:
 
 ```bash
-python topic_1/hello_world.py
-python topic_1/hello_world_advanced.py
-python topic_2/example_runnables.py
-python topic_2/output_parser.py
+python topic_1/exercises/hello_world.py
+python topic_1/exercises/hello_world_advanced.py
+python topic_2/exercises/example_runnables.py
+python topic_2/exercises/output_parser.py
 ```
 
 Streamlit examples:
@@ -80,22 +79,13 @@ Streamlit examples:
 ```bash
 streamlit run topic_1/streamlit_chatbot.py
 streamlit run topic_2/enhanced_chatbot.py
-streamlit run final_assessments/topic_1/streamlit_chatbot.py
 ```
 
 Final assessment example:
 
 ```bash
-streamlit run final_assessments/topic_2/main.py
+streamlit run topic_2/final_project/main.py
 ```
-
-## Main Dependencies
-
-- langchain
-- langchain-google-genai
-- streamlit
-- python-dotenv
-- markitdown
 
 ## Note
 
