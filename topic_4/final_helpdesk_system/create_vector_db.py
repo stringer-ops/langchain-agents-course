@@ -12,6 +12,7 @@ from config import DOCS_DIR, VECTOR_DB_DIR, EMBEDDING_MODEL
 load_dotenv()
 
 def main():
+    """Load Markdown guides, chunk them, and create the persisted vector database."""
 
     # 1 - Document loading
     files_paths = [
@@ -33,7 +34,8 @@ def main():
 
     print(f"{len(chunks)} chunks successfully generated")
 
-    #Format metadata to the desired format
+    # Docling metadata is nested; normalize it so later RAG prompts can cite a
+    # consistent source name without depending on Docling's internal structure.
     final_docs_splitted = []
     for doc in chunks:
         new_metadata = {}

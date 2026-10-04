@@ -7,20 +7,27 @@ from services import RAGSystem, EnrichContext
 from config import CONFIDENCE_THRESHOLD
 
 class State(TypedDict):
+    """Describe the data passed between helpdesk workflow nodes."""
+
     ticket: Ticket
     rag_docs: list[Document]
 
 class TicketGraph:
+    """Route tickets through RAG resolution or human escalation."""
+
     def __init__(self):
+        """Initialize the services used by the ticket workflow."""
         self.graph_compiled = None
         self.rag_system = RAGSystem()
         self.context_system = EnrichContext()
 
     def initialize_graph(self):
+        """Build and compile the ticket-processing state graph."""
 
         # Define the nodes
         rag_node = "rag_processing"
         def rag_processing(state: State) -> State:
+            """Retrieve evidence and attach the structured AI response to the ticket."""
             ticket = state["ticket"]
             rag_result = self.rag_system.consult_query(ticket.description)
             response = rag_result["response"]
@@ -38,6 +45,7 @@ class TicketGraph:
 
         ai_processing_node = "ai_processing"
         def ai_processing(state: State) -> State:
+            """Mark a sufficiently confident AI-resolved ticket as complete."""
 
             ticket = state["ticket"]
             ticket.update_status("Resolved")
@@ -46,6 +54,7 @@ class TicketGraph:
 
         human_processing_node = "human_processing" 
         def human_processing(state: State) -> State:
+            """Escalate a low-confidence ticket with a technician briefing."""
 
             ticket = state["ticket"]
             documents= state["rag_docs"]
@@ -67,8 +76,11 @@ class TicketGraph:
 
         # Define the edges       
         def branch_ticket_response(state: State):
+            """Select automated resolution or human escalation from RAG confidence."""
             ticket = state["ticket"]
 
+            # The RAG response always runs first; only its score determines the
+            # terminal route, while retrieved documents accompany an escalation.
             if ticket.ai_response.score > CONFIDENCE_THRESHOLD:
                 return ai_processing_node
             return human_processing_node
@@ -83,6 +95,7 @@ class TicketGraph:
         return graph.compile()
 
     def execute_graph(self, ticket: Ticket):
+        """Process a ticket through the compiled workflow and return its final state."""
         if self.graph_compiled is None:
             self.graph_compiled = self.initialize_graph()
 

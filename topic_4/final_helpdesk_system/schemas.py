@@ -3,6 +3,8 @@ from pydantic import BaseModel, Field, model_validator
 from config import CONFIDENCE_THRESHOLD
 
 class RAGResponse(BaseModel):
+    """Validate the structured answer returned by the RAG model."""
+
     conclusion: str | None= Field(description=f"""The answer given to the question by using the RAG answer. If the score
         score is low, in this conclusion will be indicated that a human technician will solve it.
 
@@ -24,6 +26,7 @@ class RAGResponse(BaseModel):
 
     @model_validator(mode="after")
     def clear_conclusion_when_score_is_low(self):
+        """Remove an AI conclusion when confidence requires human escalation."""
         if self.score < CONFIDENCE_THRESHOLD:
             self.conclusion = None
         return self

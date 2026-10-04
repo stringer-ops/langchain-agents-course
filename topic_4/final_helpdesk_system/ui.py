@@ -9,6 +9,7 @@ st.set_page_config(page_title="Helpdesk 2.0 with RAG", page_icon="🎫", layout=
 
 
 def render_sidebar() -> None:
+	"""Render the ticket metrics and current RAG configuration sidebar."""
 
 	with st.sidebar:
 		st.title("📊 Control Panel")
@@ -42,6 +43,7 @@ def render_sidebar() -> None:
 
 
 def render_main_content() -> None:
+	"""Render ticket submission, processing, and resolution interfaces."""
 	st.title("🎧 Helpdesk 2.0 Ticket Center")
 
 	left_col, right_col = st.columns(2)
@@ -74,6 +76,8 @@ def render_main_content() -> None:
 					st.session_state.tickets.append(ticket)
 
 					if ticket.human_response is not None:
+						# Persist the generated brief separately so it remains available while
+						# the technician edits and submits the eventual human resolution.
 						st.session_state.human_solved_contexts[ticket.ticket_id] = ticket.human_response.enriched_context
 
 					st.success(f"Ticket {ticket.ticket_id} sent successfully.")
@@ -137,7 +141,10 @@ def render_main_content() -> None:
 
 
 def main() -> None:
+	"""Initialize persistent UI state and render the Helpdesk application."""
 	if "tickets" not in st.session_state:
+		# Streamlit reruns this module on interaction; session state retains tickets
+		# and the costly workflow instance between those reruns.
 		st.session_state.tickets = []
 		st.session_state.graph = TicketGraph()
 		st.session_state.human_solved_contexts = {}

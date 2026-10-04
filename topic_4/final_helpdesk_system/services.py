@@ -15,8 +15,10 @@ from config import VECTOR_DB_DIR, EMBEDDING_MODEL, RAG_MODEL, RAG_TEMPERATURE
 load_dotenv()
 
 class RAGSystem:
+    """Answer helpdesk issues using documentation retrieved from the vector store."""
 
     def __init__(self):
+        """Initialize the vector store, language model, and RAG chain."""
 
         self.vector_db = Chroma(
             persist_directory=VECTOR_DB_DIR,
@@ -33,6 +35,7 @@ class RAGSystem:
         self.rag_chain = self._build_rag_chain()
 
     def _generate_multiple_queries_chain(self) -> RunnableSerializable:
+        """Build a chain that rewrites an issue as several retrieval queries."""
 
         template = """
             You are a professional HelpDesk assistant. You will be given a description of an issue and you
@@ -48,13 +51,17 @@ class RAGSystem:
 
 
     def _generate_multi_query_retrieval_chain(self) -> RunnableSerializable:
+        """Build a retriever that combines results for several generated queries."""
 
         retriever = self.vector_db.as_retriever(
             search_type="similarity",
         )
 
         def parse_retrieved_response(docs: list[list]):
+            """Deduplicate retrieved documents and prepare model-ready context."""
 
+            # A document can match more than one rewritten query, so serialize it
+            # before deduplicating and then restore the original Document objects.
             unique_docs = list(set([dumps(doc) for sublist in docs for doc in sublist]))
             unique_docs = [loads(doc_str, allowed_objects=[Document]) for doc_str in unique_docs]
 
@@ -72,6 +79,7 @@ class RAGSystem:
 
 
     def _build_rag_chain(self) -> RunnableSerializable:
+        """Compose query generation, retrieval, and structured answer generation."""
     
         template = """
             You are a professional RAG entity. You will be given retrieved information and a given issue.
@@ -111,6 +119,7 @@ class RAGSystem:
 
 
     def consult_query(self, query: str) -> dict:
+        """Run the RAG pipeline for an issue and return its answer and documents."""
 
         if self.rag_chain is None:
             self.rag_chain = self._build_rag_chain()
@@ -118,8 +127,10 @@ class RAGSystem:
         return self.rag_chain.invoke(query)
 
 class EnrichContext:
+    """Create concise documentation context for a human support technician."""
 
     def __init__(self):
+        """Initialize the language model and context-enrichment chain."""
 
         self.model = ChatOpenAI(
             model=RAG_MODEL,
@@ -129,6 +140,7 @@ class EnrichContext:
         self.chain = self._create_chain_context_for_humans()
 
     def _create_chain_context_for_humans(self):
+        """Build the prompt chain used to brief the human technician."""
 
         template = """
             You are an expert HelpDesk assistant. You have a long, proven record solving IT issues.
@@ -145,10 +157,12 @@ class EnrichContext:
         return prompt | self.model | StrOutputParser()
 
     def _parse_docs(self, docs: list[Document]):
+        """Convert retrieved documents into text for the enrichment prompt."""
 
         return '\n\n'.join([str(doc) for doc in docs])
 
     def geneate_context(self, docs: list[Document], issue: str):
+        """Generate a human-readable brief for an unresolved issue."""
 
         parsed_docs = self._parse_docs(docs)
         return self.chain.invoke({"documentation": parsed_docs, "issue": issue})
