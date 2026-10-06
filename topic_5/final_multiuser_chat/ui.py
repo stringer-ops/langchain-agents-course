@@ -18,7 +18,11 @@ st.set_page_config(page_title="Multi-User Persistent Chat", page_icon="💬", la
 
 
 def initialise_state() -> None:
-    """Create the session-scoped user, chat, and message stores."""
+    """Create the browser-session stores used to drive sidebar navigation.
+
+    These values are UI state. The backend separately persists LangGraph
+    messages using each chat's ``thread_id``.
+    """
     st.session_state.setdefault("users", {})
     st.session_state.setdefault("selected_user", None)
     st.session_state.setdefault("selected_chat", None)
@@ -29,6 +33,7 @@ def initialise_state() -> None:
 
 
 def add_user(name: str) -> None:
+    """Register a user locally and initialise that user's memory collection."""
     name = name.strip()
     if not name:
         st.warning("Please enter a user name.")
@@ -72,13 +77,14 @@ def chat_name_from_first_message(message: str, chats: dict[str, Any]) -> str:
 
 @st.dialog("Create a new user")
 def new_user_dialog() -> None:
+    """Show the small form used to create a user from the sidebar."""
     name = st.text_input("User name", key="new_user_name")
     if st.button("Create user", type="primary"):
         add_user(name)
 
 
 def chat_front(message: str, thread_id: str, user: str) -> str:
-    """Send a message to the project backend, with a useful setup error."""
+    """Send a message to the backend for the active user and chat thread."""
     try:
 
         response: Any = chat(message, thread_id, user)
@@ -143,6 +149,8 @@ elif not chat_name:
     st.caption(f"Start a new conversation as {user}.")
 
     if prompt := st.chat_input("Message a new chat"):
+        # A thread is created only for the first submitted message. The chat is
+        # then saved in the sidebar after its first complete exchange.
         thread_id = str(uuid.uuid4())
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -161,6 +169,7 @@ elif not chat_name:
                 {"role": "assistant", "content": answer},
             ],
         }
+        # Rerun so the just-created chat is rendered as a normal saved chat.
         st.session_state.selected_chat = saved_name
         st.rerun()
 else:
@@ -179,6 +188,7 @@ else:
             st.markdown(item["content"])
 
     if prompt := st.chat_input("Message this chat"):
+        # Reusing the saved thread ID lets LangGraph restore this chat's history.
         chat_data["messages"].append({"role": "user", "content": prompt})
         with st.chat_message("user"):
             st.markdown(prompt)

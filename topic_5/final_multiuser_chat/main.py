@@ -1,3 +1,9 @@
+"""LangGraph backend for the multi-user chat application.
+
+Each user has an isolated Chroma collection for long-term memories, while a
+LangGraph thread preserves the short-term message history of one chat.
+"""
+
 import sqlite3
 import uuid
 from pathlib import Path
@@ -13,6 +19,8 @@ from config import VECTOR_DB_DIR, EMBEDDING_MODEL, LLM_MODEL
 
 load_dotenv()
 
+# LangGraph's SQLite checkpointer needs a standard sqlite3 connection.  This
+# persists thread histories separately from Chroma's vector-memory storage.
 checkpoint_connection = sqlite3.connect(
     Path(__file__).parent / "chat_history.db", check_same_thread=False
 )
@@ -20,6 +28,7 @@ checkpoint_connection = sqlite3.connect(
 llm = ChatOpenAI(model=LLM_MODEL, temperature=0)
 
 def create_user(user: str):
+    """Create (or open) the Chroma collection that stores one user's memories."""
     vector_db = Chroma(
         collection_name=user,
         embedding_function=OpenAIEmbeddings(model=EMBEDDING_MODEL),
@@ -34,7 +43,7 @@ def create_user(user: str):
 graph = StateGraph(state_schema=MessagesState)
 
 def search_memory(query: str, user: str, k: int = 4):
-    """Searchs relevant chunks in vector DB"""
+    """Return the ``k`` memory snippets most relevant to a user's query."""
 
     collection = Chroma(
             collection_name=user,
@@ -46,7 +55,7 @@ def search_memory(query: str, user: str, k: int = 4):
     return [document.page_content for document in results]
 
 def store_memory(text: str, user: str):
-    """Stores relevant user info in vector DB"""
+    """Store one extracted personal fact in the specified user's collection."""
 
     if text:
 
@@ -60,7 +69,7 @@ def store_memory(text: str, user: str):
         print(f"Stored '{text}' on memory")
 
 def generate_personal_info_extraction_chain():
-    """Chain that extracts user info from a message"""
+    """Build the LLM chain used to decide which user details are worth saving."""
     template = """
         You are a personal data IT expert. Your goal is to extract relevant personal 
         information in simple sentences separated by newlines if there is any. Return empty string if its 
@@ -84,14 +93,17 @@ user_retrieval_chain = generate_personal_info_extraction_chain()
 
 chat_node_name = "chat_node"
 def chat_node(state: MessagesState, config):
+    """Answer a message using thread history plus relevant long-term memories."""
     messages = state["messages"]
+    # ``user`` is supplied in ``chat``'s configurable runtime values, rather
+    # than in the checkpointed message state, so memories remain user-specific.
     user = config["configurable"]["user"]
 
-    #1. Search vector db for content
+    # Retrieve only facts that are relevant to the newest user message.
     last_message = messages[-1].content
     db_data = search_memory(last_message, user)
 
-    #2. Prompt for RAG
+    # Add those facts to the system prompt without modifying saved history.
     prompt = """You are an assistant that remembers important information about the user 
     in order to provide a better chat experience"""
 
@@ -100,12 +112,12 @@ def chat_node(state: MessagesState, config):
         for chunk in db_data:
             prompt += f"\n - {chunk}"
 
-    #3. Generate response
+    # The graph reducer appends this response to the current thread.
     messages_with_system = [SystemMessage(content=prompt)] + messages
 
     response = llm.invoke(messages_with_system)
 
-    #4. Store relevant info from the user into vector db
+    # Save facts extracted from the message for use in future chats by this user.
     info_extracted = user_retrieval_chain.invoke({"message": last_message})
     
     if info_extracted.content:
@@ -125,10 +137,15 @@ app = graph.compile(
 )
 
 def chat(message: str, thread_id: str, user: str):
+    """Run one turn and return the assistant's final text response.
+
+    ``thread_id`` isolates a conversation's short-term history; ``user``
+    selects the long-term memory collection shared by that user's chats.
+    """
 
     config = {"configurable": {"thread_id": thread_id, "user": user}}
 
+    # MessagesState expects a list of LangChain messages, not a raw string.
     response = app.invoke({"messages": [HumanMessage(content=message)]}, config=config)
 
     return response["messages"][-1].content
-
